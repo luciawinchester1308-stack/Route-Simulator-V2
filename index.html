@@ -67,6 +67,9 @@
   .btn.green:hover:not(:disabled)  { background:var(--green);  color:var(--bg); }
   .btn.red    { border-color:#ff2244; color:#ff2244; }
   .btn.red:hover:not(:disabled)    { background:#ff2244; color:var(--bg); }
+  .toggle-compound { border-color: var(--muted); color: var(--muted); font-size: 8px; }
+  .toggle-compound.active { border-color: var(--green); color: var(--green); }
+  .toggle-compound:hover { background: rgba(255,255,255,0.04); color: var(--text) !important; }
 
   /* MAIN */
   .main { flex:1; display:grid; grid-template-columns:310px 1fr; overflow:hidden; position:relative; transition: grid-template-columns 0.3s ease; }
@@ -286,6 +289,7 @@
         <button class="btn"        id="btn-reset-route" onclick="resetRouteProgress()"  disabled>↺ RESET &amp; BANK PROGRESS</button>
         <button class="btn red"    id="btn-discard"     onclick="discardRouteProgress()" disabled>✕ RESET &amp; DISCARD</button>
         <button class="btn"        id="btn-reset"       onclick="resetSim()"            disabled>⏹ FULL RESET</button>
+        <button class="btn toggle-compound" id="btn-compound-mode" onclick="toggleCompoundMode()">⚡ COMPOUND: 0.1%</button>
       </div>
 
     </div><!-- end side-scroll -->
@@ -348,7 +352,7 @@ let scheduledStart  = null;
 let bankedPct        = 0;    // total % banked from all previous resets
 let compoundCount    = 0;    // total compound events ever applied
 let progressAccum    = 0;    // progress % accumulated this run toward next compound
-const PROGRESS_PER_COMPOUND = 0.002; // 0.2% progress = 1 compound
+let PROGRESS_PER_COMPOUND = 0.001; // 0.1% progress = 1 compound (togglable)
 
 // ─── LIVE CLOCK ───────────────────────────────────────────────────────────────
 function tickClock() {
@@ -508,7 +512,7 @@ function resetRouteProgress() {
 
   // Recalculate speed from total banked progress
   // 0.1% = 1 compound → compounds = bankedPct / 0.1
-  const totalCompounds = Math.floor(bankedPct / 0.2);
+  const totalCompounds = Math.floor(bankedPct / (PROGRESS_PER_COMPOUND * 100));
   compoundCount        = totalCompounds;
   speed                = BASE_SPEED * Math.pow(1.01, totalCompounds);
 
@@ -751,9 +755,23 @@ function simTick() {
 function updateBankedDisplay() {
   const banner = document.getElementById('banked-banner');
   if (bankedPct <= 0) { banner.style.display = 'none'; return; }
-  const totalCompounds = Math.floor(bankedPct / 0.2);
+  const totalCompounds = Math.floor(bankedPct / (PROGRESS_PER_COMPOUND * 100));
   banner.style.display = 'block';
   banner.textContent   = `BANKED: ${bankedPct.toFixed(3)}%  ·  START SPEED: ${(BASE_SPEED * Math.pow(1.01, totalCompounds)).toFixed(4)} KM/H`;
+}
+
+// ─── COMPOUND MODE TOGGLE ─────────────────────────────────────────────────────
+function toggleCompoundMode() {
+  const btn = document.getElementById('btn-compound-mode');
+  if (PROGRESS_PER_COMPOUND === 0.001) {
+    PROGRESS_PER_COMPOUND = 0.002;
+    btn.textContent = '⚡ COMPOUND: 0.2%';
+    btn.classList.add('active');
+  } else {
+    PROGRESS_PER_COMPOUND = 0.001;
+    btn.textContent = '⚡ COMPOUND: 0.1%';
+    btn.classList.remove('active');
+  }
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
